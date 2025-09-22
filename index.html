@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>永續報告書自動評分系統 (專業評分版)</title>
+    <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
+    <script src="[https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js](https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js)" defer></script>
+    <script src="[https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js](https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js)" defer></script>
+    <script src="[https://cdn.jsdelivr.net/npm/chart.js](https://cdn.jsdelivr.net/npm/chart.js)" defer></script>
+    <link rel="preconnect" href="[https://fonts.googleapis.com](https://fonts.googleapis.com)">
+    <link rel="preconnect" href="[https://fonts.gstatic.com](https://fonts.gstatic.com)" crossorigin>
+    <link href="[https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap](https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap)" rel="stylesheet">
+    <style>
+        body { font-family: 'Microsoft JhengHei', 'Noto Sans TC', sans-serif; }
+        .pdf-content { font-family: 'Microsoft JhengHei', 'Noto Sans TC', sans-serif; }
+        .step-indicator { transition: all 0.3s ease; }
+        .step-active { background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; }
+        .step-completed { background: linear-gradient(135deg, #10b981, #059669); color: white; }
+        .upload-area { border: 2px dashed #d1d5db; transition: all 0.3s ease; min-height: 220px; display: flex; align-items: center; justify-content: center; }
+        .upload-area:hover { border-color: #3b82f6; background-color: #f8fafc; }
+        .upload-area.dragover { border-color: #3b82f6; background-color: #eff6ff; }
+        .file-item, .website-link-item { animation: slideIn 0.3s ease; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .loader {
+            width: 48px; height: 48px; border: 5px solid #E5E7EB;
+            border-bottom-color: #3b82f6; border-radius: 50%; display: inline-block;
+            box-sizing: border-box; animation: rotation 1s linear infinite;
+        }
+        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        details summary { list-style: none; }
+        details summary::-webkit-details-marker { display: none; }
+        .chart-container { position: relative; height: 250px; width: 100%; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-gray-800 mb-4">永續報告書自動評分系統</h1>
+            <p class="text-lg text-gray-600">基於 TCSA 評選準則的 AI 智能評分平台</p>
+        </div>
+
+        <!-- Steps -->
+        <div id="steps-container" class="flex flex-col items-center">
+             <div class="flex items-center mb-12">
+                <div class="flex items-center space-x-4">
+                    <div id="step1" class="step-indicator flex items-center justify-center w-12 h-12 rounded-full font-bold">1</div>
+                    <div class="w-16 h-1 bg-gray-300"></div>
+                    <div id="step2" class="step-indicator flex items-center justify-center w-12 h-12 rounded-full font-bold bg-gray-300">2</div>
+                    <div class="w-16 h-1 bg-gray-300"></div>
+                    <div id="step3" class="step-indicator flex items-center justify-center w-12 h-12 rounded-full font-bold bg-gray-300">3</div>
+                    <div class="w-16 h-1 bg-gray-300"></div>
+                    <div id="step4" class="step-indicator flex items-center justify-center w-12 h-12 rounded-full font-bold bg-gray-300">4</div>
+                </div>
+            </div>
+            <div class="flex justify-center mb-8 -mt-8">
+                <div class="flex space-x-20 text-sm text-gray-600">
+                    <span class="text-center">評分架構</span>
+                    <span class="text-center">上傳報告書</span>
+                    <span class="text-center">AI 分析評分</span>
+                    <span class="text-center">查看結果</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 1: Rubric Intro -->
+        <div id="step1-content" class="bg-white rounded-xl shadow-lg p-8 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                <span class="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm mr-3">1</span>
+                TCSA 評選架構說明
+            </h2>
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
+                <p class="text-blue-800">本系統將依據 TCSA 永續報告書獎評選準則，透過 AI 進行分析。評分架構如下：</p>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- 報告書 -->
+                <div class="bg-white rounded-lg p-5 border border-blue-200">
+                    <h3 class="font-bold text-blue-800 text-xl mb-3">永續報告書 (60%)</h3>
+                    <details class="mb-2" open>
+                        <summary class="cursor-pointer font-medium text-blue-700 text-lg">一、完整性 (40%)</summary>
+                        <ul class="mt-2 text-sm text-gray-700 space-y-1 pl-4">
+                            <li>- 重大性議題 (8%)</li>
+                            <li>- 利害關係人共融 (6%)</li>
+                            <li>- 策略 (12%)</li>
+                            <li>- 組織介紹 (2%)</li>
+                            <li>- 重大永續規範執行及資訊揭露 (12%)</li>
+                        </ul>
+                    </details>
+                    <details class="mb-2" open>
+                        <summary class="cursor-pointer font-medium text-blue-700 text-lg">二、可信度 (35%)</summary>
+                         <ul class="mt-2 text-sm text-gray-700 space-y-1 pl-4">
+                            <li>- 管理流程 (10%)</li>
+                            <li>- 利害關係人回應 (5%)</li>
+                            <li>- 治理 (5%)</li>
+                            <li>- 績效 (5%)</li>
+                            <li>- 保證/確信 (10%)</li>
+                        </ul>
+                    </details>
+                    <details open>
+                        <summary class="cursor-pointer font-medium text-blue-700 text-lg">三、溝通性 (25%)</summary>
+                         <ul class="mt-2 text-sm text-gray-700 space-y-1 pl-4">
+                            <li>- 展現 (10%)</li>
+                            <li>- 利害關係人共融 (5%)</li>
+                            <li>- 架構 (10%)</li>
+                        </ul>
+                    </details>
+                </div>
+                <!-- 多元媒體 -->
+                <div class="bg-white rounded-lg p-5 border border-green-200">
+                     <h3 class="font-bold text-green-800 text-xl mb-3">多元媒體應用 (40%)</h3>
+                     <ul class="mt-2 text-sm text-gray-700 space-y-1 pl-4">
+                        <li>- 組織永續專區完整性 (20%)</li>
+                        <li>- 網頁管理與即時更新 (15%)</li>
+                        <li>- 電子版報告書與關鍵資訊連結 (20%)</li>
+                        <li>- 多元媒體展現 (25%)</li>
+                        <li>- 溝通回饋管道與社群網絡互動 (20%)</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="mt-8 flex justify-between items-center">
+                <button type="button" id="next-step1" class="bg-blue-500 hover:bg-blue-600 text-white px-8 py-3 rounded-lg font-medium transition-colors">
+                    下一步：上傳報告書
+                </button>
+                 <button type="button" id="test-connection-btn" class="text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg transition-colors flex items-center">
+                    <span id="test-icon" class="mr-2">🔌</span>
+                    <span id="test-text">測試後端連接</span>
+                </button>
+            </div>
+             <div id="connection-status" class="hidden mt-4"></div>
+        </div>
+        
+        <!-- Step 2: Upload -->
+        <div id="step2-content" class="bg-white rounded-xl shadow-lg p-8 mb-8 hidden">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">上傳報告書與網站連結</h2>
+            <div id="upload-area" class="upload-area py-16 sm:py-24 px-6 rounded-lg text-center cursor-pointer mb-4">
+                拖放 PDF 到此或點擊選擇
+            </div>
+            <input type="file" id="report-files" accept=".pdf" multiple class="hidden">
+            <div id="uploaded-reports" class="mb-6 space-y-2"></div>
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-800">企業網站連結</h3>
+                <button onclick="addWebsiteLink()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium">新增網站</button>
+            </div>
+            <div id="website-links-container" class="space-y-3">
+                <div class="flex space-x-2 website-link-item">
+                    <input type="text" placeholder="公司名稱 (用於對應 PDF)" class="company-name w-1/3 border px-3 py-2 rounded-lg" />
+                    <input type="url" placeholder="[https://www.company.com](https://www.company.com)" class="website-url flex-1 border px-3 py-2 rounded-lg" />
+                    <button onclick="removeWebsiteLink(this)" class="text-red-500 hover:text-red-700 px-2 rounded-lg">刪除</button>
+                </div>
+            </div>
+            <div class="mt-8 flex items-center">
+                <button id="next-step2" class="bg-blue-500 text-white px-8 py-3 rounded-lg font-medium disabled:bg-gray-300 disabled:cursor-not-allowed" disabled>
+                    開始 AI 分析
+                </button>
+                <span class="ml-4 text-sm text-gray-500">需至少 1 份 PDF 與 1 個網站 URL</span>
+            </div>
+        </div>
+
+        <!-- Step 3: Loading -->
+        <div id="step3-content" class="hidden text-center py-12 bg-white rounded-xl shadow-lg">
+            <div class="loader mx-auto mb-6"></div>
+            <p class="text-xl font-semibold text-gray-800 mb-4">正在請求 AI 分析，請稍候...</p>
+            <div id="analysis-progress" class="mt-6 max-w-3xl mx-auto text-left text-sm space-y-2 text-gray-700 bg-gray-50 p-4 rounded-lg border"></div>
+        </div>
+
+        <!-- Step 4: Results -->
+        <div id="step4-content" class="hidden">
+            <div id="pdf-content" class="pdf-content"></div>
+            <div class="mt-8 flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                <button id="restart" class="w-full bg-gray-500 hover:bg-gray-600 text-white px-8 py-4 rounded-lg font-medium transition-colors flex items-center justify-center text-lg">
+                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5m-4 9a9 9 0 110-18 9 9 0 010 18z"></path></svg>
+                    重新開始
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const steps = [document.getElementById('step1'), document.getElementById('step2'), document.getElementById('step3'), document.getElementById('step4')];
+        const stepContents = [document.getElementById('step1-content'), document.getElementById('step2-content'), document.getElementById('step3-content'), document.getElementById('step4-content')];
+        
+        const testConnectionBtn = document.getElementById('test-connection-btn');
+        const nextStep1Btn = document.getElementById('next-step1');
+        const nextStep2Btn = document.getElementById('next-step2');
+        const uploadArea = document.getElementById('upload-area');
+        const reportFilesInput = document.getElementById('report-files');
+        const uploadedReportsContainer = document.getElementById('uploaded-reports');
+        const websiteLinksContainer = document.getElementById('website-links-container');
+        const analysisProgress = document.getElementById('analysis-progress');
+        const restartBtn = document.getElementById('restart');
+        const pdfContent = document.getElementById('pdf-content');
+
+        let uploadedFiles = [];
+        
+        const updateStepUI = (step) => {
+            steps.forEach((s, index) => {
+                s.classList.remove('step-active', 'step-completed', 'bg-blue-500', 'text-white', 'bg-gray-300', 'bg-green-500');
+                const bar = s.nextElementSibling;
+                if (bar) bar.classList.remove('bg-blue-500', 'bg-green-500');
+
+                if (index < step - 1) {
+                    s.classList.add('step-completed', 'bg-green-500', 'text-white');
+                    if (bar) bar.classList.add('bg-green-500');
+                } else if (index === step - 1) {
+                    s.classList.add('step-active', 'bg-blue-500', 'text-white');
+                    if (bar) bar.classList.add('bg-blue-500');
+                } else {
+                    s.classList.add('bg-gray-300');
+                }
+            });
+            stepContents.forEach(content => content.classList.add('hidden'));
+            if (stepContents[step - 1]) stepContents[step - 1].classList.remove('hidden');
+        };
+
+        const setupConnectionSection = () => {
+            testConnectionBtn.addEventListener('click', async () => {
+                const testIcon = document.getElementById('test-icon');
+                const testText = document.getElementById('test-text');
+                const connectionStatus = document.getElementById('connection-status');
+
+                testIcon.textContent = '⏳';
+                testText.textContent = '測試中...';
+                testConnectionBtn.disabled = true;
+                connectionStatus.classList.remove('hidden');
+
+                try {
+                    const response = await fetch('[http://127.0.0.1:8000/health](http://127.0.0.1:8000/health)');
+                    if (!response.ok) throw new Error(`HTTP 錯誤! 狀態碼: ${response.status}`);
+                    const data = await response.json();
+                    if (data.status === 'ok') {
+                        connectionStatus.innerHTML = `<div class="p-4 bg-green-100 border border-green-300 text-green-800 rounded-lg">✅ 連接成功！</div>`;
+                    } else { throw new Error('後端回傳狀態非 "ok"'); }
+                } catch (error) {
+                    connectionStatus.innerHTML = `<div class="p-4 bg-red-100 border border-red-300 text-red-800 rounded-lg">❌ 連接失敗：${error.message}。</div>`;
+                } finally {
+                    testIcon.textContent = '🔌';
+                    testText.textContent = '測試後端連接';
+                    testConnectionBtn.disabled = false;
+                }
+            });
+            nextStep1Btn.addEventListener('click', () => updateStepUI(2));
+        };
+
+        const setupUploadSection = () => {
+            const checkStep2Completion = () => { nextStep2Btn.disabled = !(uploadedFiles.length > 0 && Array.from(websiteLinksContainer.querySelectorAll('.website-url')).some(i => i.value.trim())); };
+            const handleFiles = (files) => {
+                for (const file of files) {
+                    if (file.type !== 'application/pdf' || uploadedFiles.some(f => f.name === file.name)) continue;
+                    uploadedFiles.push(file);
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'file-item bg-gray-100 p-3 rounded-lg flex items-center justify-between';
+                    fileItem.innerHTML = `<div class="flex items-center"><span class="text-xl mr-3">📄</span><div><p class="font-medium text-gray-800">${file.name}</p><p class="text-sm text-gray-500">${(file.size / 1024 / 1024).toFixed(2)} MB</p></div></div>`;
+                    uploadedReportsContainer.appendChild(fileItem);
+                }
+                checkStep2Completion();
+            };
+
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(evt => uploadArea.addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); }));
+            ['dragenter', 'dragover'].forEach(evt => uploadArea.addEventListener(evt, () => uploadArea.classList.add('dragover')));
+            ['dragleave', 'drop'].forEach(evt => uploadArea.addEventListener(evt, () => uploadArea.classList.remove('dragover')));
+            uploadArea.addEventListener('click', () => reportFilesInput.click());
+            reportFilesInput.addEventListener('change', (e) => handleFiles(e.target.files));
+            uploadArea.addEventListener('drop', (e) => handleFiles(e.dataTransfer.files));
+            window.addWebsiteLink = () => {
+                const div = document.createElement('div');
+                div.className = 'website-link-item flex space-x-2';
+                div.innerHTML = `<input type="text" placeholder="公司名稱 (用於對應 PDF)" class="company-name w-1/3 border px-3 py-2 rounded-lg" /><input type="url" placeholder="https://www.company.com" class="website-url flex-1 border px-3 py-2 rounded-lg" /><button onclick="removeWebsiteLink(this)" class="text-red-500 hover:text-red-700 px-2 rounded-lg">刪除</button>`;
+                websiteLinksContainer.appendChild(div);
+            };
+            window.removeWebsiteLink = (btn) => { btn.closest('.website-link-item').remove(); checkStep2Completion(); };
+            document.getElementById('step2-content').addEventListener('input', checkStep2Completion);
+        };
+        
+        const startAnalysis = async () => {
+            updateStepUI(3);
+            analysisProgress.innerHTML = '';
+            const updateProgress = (text, isSuccess = null) => {
+                const p = document.createElement('p');
+                p.innerHTML = `${isSuccess === true ? '✅' : isSuccess === false ? '❌' : '⏳'} ${text}`;
+                if (isSuccess === false) p.classList.add('text-red-600', 'font-semibold');
+                analysisProgress.appendChild(p);
+            };
+
+            const formData = new FormData();
+            const urlMap = new Map();
+            websiteLinksContainer.querySelectorAll('.website-link-item').forEach(item => {
+                const name = item.querySelector('.company-name').value.trim();
+                const url = item.querySelector('.website-url').value.trim();
+                if (name && url) urlMap.set(name, url);
+            });
+
+            const fileData = uploadedFiles.map(file => {
+                const baseName = file.name.replace(/\.pdf$/i, '');
+                let foundUrl = urlMap.get(baseName) || Array.from(urlMap.entries()).find(([name, url]) => baseName.includes(name) || name.includes(baseName))?.[1];
+                if (!foundUrl) updateProgress(`錯誤：找不到檔案 "${file.name}" 對應的公司/網站。`, false);
+                return { file, companyName: baseName, websiteUrl: foundUrl || '' };
+            }).filter(d => d.websiteUrl);
+
+            if (fileData.length !== uploadedFiles.length) { updateProgress(`請返回上一步，確保所有 PDF 都有對應的公司與網站。`, false); return; }
+
+            fileData.forEach(data => { formData.append('files', data.file); formData.append('company_names', data.companyName); formData.append('website_urls', data.websiteUrl); });
+            
+            updateProgress(`正在提交 ${fileData.length} 份報告書...`);
+            try {
+                updateProgress('正在將檔案傳送至後端伺服器...');
+                const response = await fetch(`http://127.0.0.1:8000/scoring/batch`, { method: "POST", body: formData });
+                updateProgress('已收到後端初步回應！', true);
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ detail: '無法解析後端錯誤' }));
+                    throw new Error(`後端錯誤 (${response.status}): ${errorData.detail}`);
+                }
+                updateProgress('正在等待後端完成所有 AI 分析 (此步驟可能需時較長)...');
+                const results = await response.json();
+                updateProgress(`後端已回傳 ${results.length} 筆評分結果！`, true);
+                renderResults(results);
+                updateStepUI(4);
+            } catch (error) {
+                let msg = error.message;
+                if (msg.includes("Load failed") || msg.includes("Failed to fetch")) msg = "與後端連接中斷。<b>請檢查 VS Code 的終端機視窗，尋找紅色的錯誤訊息。</b>";
+                updateProgress(`請求失敗: ${msg}`, false);
+                console.error(`呼叫後端 API 時出錯:`, error);
+            }
+        };
+        
+        const renderResults = (results) => {
+            if (!results || results.length === 0) {
+                pdfContent.innerHTML = `<div class="text-center p-8 bg-white rounded-lg shadow"><h3 class="text-2xl font-bold text-red-600">評分失敗</h3><p class="text-gray-600 mt-2">未能從後端取得任何評分結果。請檢查後端日誌。</div>`;
+                return;
+            }
+            pdfContent.innerHTML = results.map((r, idx) => renderCompanyCard(r, idx)).join('');
+            results.forEach((r, idx) => { try { initializeCharts(r, idx); } catch(e) { console.error(`為 ${r.company} 初始化圖表失敗:`, e); } });
+        };
+
+        const renderCompanyCard = (r, idx) => {
+            const finalScore = r.totals?.final ?? 0;
+            const level = finalScore >= 85 ? { text: '優秀', color: 'green' } : finalScore >= 70 ? { text: '良好', color: 'blue' } : finalScore >= 60 ? { text: '合格', color: 'amber' } : { text: '待加強', color: 'red' };
+
+            const reportBreakdown = r.breakdown?.find(b => b.id === 'report');
+            const mediaBreakdown = r.breakdown?.find(b => b.id === 'media');
+
+            const renderQualitativeFeedback = (feedback) => {
+                if (!feedback || Object.keys(feedback).length === 0) return '<p class="text-sm text-gray-500">(AI 未提供相關說明)</p>';
+                if (typeof feedback !== 'object' || Array.isArray(feedback)) {
+                    const feedbackArray = Array.isArray(feedback) ? feedback : [feedback];
+                    return `<ul class="pl-4 text-gray-700 list-disc list-inside">${feedbackArray.map(p => `<li>${String(p)}</li>`).join('')}</ul>`;
+                }
+                return Object.entries(feedback).map(([category, points]) => {
+                    const pointsArray = Array.isArray(points) ? points : [points];
+                    return `<div class="mt-3"><h5 class="font-semibold text-gray-800">${category}</h5><ul class="pl-4 mt-1 text-gray-700 list-disc list-inside">${pointsArray.map(p => `<li>${p}</li>`).join('')}</ul></div>`;
+                }).join('');
+            };
+
+            const overviewTableHTML = `
+                <table class="w-full text-sm text-left text-gray-700 border-collapse">
+                    <thead><tr class="border-b-2 border-gray-300"><th class="py-2 font-semibold">評分項目</th><th class="py-2 font-semibold text-center">滿分</th><th class="py-2 font-semibold text-center">得分</th><th class="py-2 font-semibold text-center">得分率</th><th class="py-2 font-semibold">AI 評分說明</th></tr></thead>
+                    <tbody>
+                        ${[
+                            { item: reportBreakdown, title: "永續報告書", max: 60, weightedScore: r.totals?.report, comment: reportBreakdown?.ai_comment },
+                            { item: mediaBreakdown, title: "多元媒體應用", max: 40, weightedScore: r.totals?.media, comment: mediaBreakdown?.ai_comment }
+                        ].map(data => `
+                            <tr class="border-b"><td class="py-3 font-medium text-gray-800">${data.title} (總權重 ${data.max}%)</td><td class="py-3 text-center">-</td><td class="py-3 text-center">${(data.weightedScore ?? 0).toFixed(1)}</td><td class="py-3 text-center">${(data.max > 0 ? (data.weightedScore ?? 0) / data.max * 100 : 0).toFixed(1)}%</td><td class="py-3 text-gray-600">${data.comment || '(AI 未提供說明)'}</td></tr>
+                            ${(data.item?.sections || []).map(sec => `<tr class="border-b bg-gray-50"><td class="py-2 pl-6">- ${sec.title}</td><td class="py-2 text-center">${sec.max_score}</td><td class="py-2 text-center">${(sec.score ?? 0).toFixed(1)}</td><td class="py-2 text-center">${(sec.max_score > 0 ? (sec.score ?? 0) / sec.max_score * 100 : 0).toFixed(1)}%</td><td class="py-2 text-gray-500 italic">${sec.ai_comment || ''}</td></tr>`).join('')}
+                        `).join('')}
+                    </tbody>
+                </table>`;
+
+            const renderSubCriteria = (subCriteria) => (subCriteria || []).map(sc => `
+                <li class="flex justify-between items-center py-1 pl-4 text-xs text-gray-600">
+                    <span>- ${sc.title}</span>
+                    <span class="font-medium text-gray-700">${(sc.score ?? 0).toFixed(1)} / ${sc.max_score}</span>
+                </li>`).join('');
+
+            const renderCriteria = (criteria) => (criteria || []).map(c => `
+                <details class="mb-1" open>
+                    <summary class="flex justify-between items-center py-1 cursor-pointer">
+                        <span class="font-medium text-gray-800">${c.title || '評分項'}</span>
+                        <span class="font-bold text-gray-800">${(c.score ?? 0).toFixed(1)} / ${c.max_score}</span>
+                    </summary>
+                    <ul class="mt-1 border-t border-gray-200 pt-1">${renderSubCriteria(c.sub_criteria)}</ul>
+                </details>`).join('');
+
+            const renderSections = (sections, titles = []) => (sections || []).map((s, index) => {
+                const sectionTitle = s.title || titles[index] || '評分項';
+                return `
+                <div class="mb-2 bg-gray-50 p-3 rounded-lg">
+                    <div class="font-semibold text-gray-800 flex justify-between">
+                        <span>${sectionTitle}</span>
+                        <span>${(s.score ?? 0).toFixed(1)} / ${s.max_score}</span>
+                    </div>
+                    <div class="mt-2 text-sm text-gray-600 space-y-1 pt-2">
+                        ${renderCriteria(s.criteria)}
+                    </div>
+                </div>`;
+            }).join('');
+            
+            const reportSectionTitles = ['完整性', '可信度', '溝通性'];
+            const reportDetailsHTML = (reportBreakdown && reportBreakdown.sections) ? `<div><h4 class="text-xl font-semibold text-blue-800 mb-3">永續報告書</h4>${renderSections(reportBreakdown.sections, reportSectionTitles)}</div>` : `<div class="bg-gray-50 p-4 rounded-lg"><p class="text-sm text-gray-500">無詳細評分資料。</p></div>`;
+            const mediaDetailsHTML = (mediaBreakdown && mediaBreakdown.sections) ? `<div><h4 class="text-xl font-semibold text-green-800 mb-3">多元媒體應用</h4>${renderSections(mediaBreakdown.sections)}</div>` : `<div class="bg-gray-50 p-4 rounded-lg"><p class="text-sm text-gray-500">無詳細評分資料。</p></div>`;
+
+            return `
+            <section id="company-${idx}" class="bg-white p-6 sm:p-8 rounded-xl shadow-lg border mb-10">
+                <!-- 區塊一：頂部資訊卡 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                    <div class="bg-gray-100 p-6 rounded-lg border"><h3 class="text-sm font-medium text-gray-500 mb-1">評分公司</h3><p class="text-2xl font-bold text-gray-800">${r.company}</p></div>
+                    <div class="bg-gray-100 p-6 rounded-lg border"><h3 class="text-sm font-medium text-gray-500 mb-1">總得分</h3><p class="text-2xl font-bold text-gray-800">${finalScore.toFixed(1)} / 100</p></div>
+                    <div class="bg-${level.color}-50 text-${level.color}-800 p-6 rounded-lg border border-${level.color}-200"><h3 class="text-sm font-medium text-${level.color}-600 mb-1">評分等級</h3><p class="text-2xl font-bold">${level.text}</p></div>
+                    <div class="bg-gray-100 p-6 rounded-lg border"><h3 class="text-sm font-medium text-gray-500 mb-1">分項得分</h3><p class="text-sm">報告書: <b class="font-semibold">${(r.totals?.report ?? 0).toFixed(1)}</b> / 60</p><p class="text-sm mt-1">多元媒體: <b class="font-semibold">${(r.totals?.media ?? 0).toFixed(1)}</b> / 40</p></div>
+                </div>
+                
+                <!-- 區塊二：AI 總評與質化分析 -->
+                ${r.overview_comment ? `<div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-8 rounded-r-lg"><p class="text-blue-800"><b class="font-semibold">AI 總評：</b>${r.overview_comment}</p></div>` : ''}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-6"><h4 class="text-lg font-semibold text-green-800 mb-4">✅ 優點</h4>${renderQualitativeFeedback(r.strengths)}</div>
+                    <div class="bg-amber-50 border border-amber-200 rounded-lg p-6"><h4 class="text-lg font-semibold text-amber-800 mb-4">💡 可改善建議</h4>${renderQualitativeFeedback(r.improvements)}</div>
+                </div>
+
+                <!-- 區塊三：評分總覽 -->
+                <h3 class="text-2xl font-bold text-gray-800 mb-4 mt-10">評分總覽</h3>
+                <div class="bg-white border rounded-lg p-4 shadow-sm mb-8">
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-6 items-center">
+                        <div class="md:col-span-2 chart-container"><canvas id="overviewChart-${idx}"></canvas></div>
+                        <div class="md:col-span-3">${overviewTableHTML}</div>
+                    </div>
+                </div>
+
+                <!-- 區塊四：詳細評分 -->
+                <h3 class="text-2xl font-bold text-gray-800 mb-4 mt-10">詳細評分</h3>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    ${reportDetailsHTML}
+                    ${mediaDetailsHTML}
+                </div>
+
+                <div class="mt-8 flex items-center justify-end"><button onclick="downloadSingle(${idx}, '${r.company}')" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-lg font-medium flex items-center"><svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>下載此公司評分報告 (PDF)</button></div>
+            </section>`;
+        };
+        
+        const initializeCharts = (r, idx) => {
+            const reportBreakdown = r.breakdown?.find(b => b.id === 'report');
+            const mediaBreakdown = r.breakdown?.find(b => b.id === 'media');
+            const labels = []; const data = []; const backgroundColors = [];
+
+            if (reportBreakdown && reportBreakdown.sections) {
+                reportBreakdown.sections.forEach(sec => { labels.push(sec.title || '報告書項目'); data.push(sec.score ?? 0); });
+                backgroundColors.push("#3b82f6", "#6366f1", "#8b5cf6");
+            }
+            if (mediaBreakdown) {
+                labels.push('多元媒體應用'); data.push(r.totals?.media ?? 0); backgroundColors.push("#10b981");
+            }
+
+            const ctx = document.getElementById(`overviewChart-${idx}`);
+            if(ctx) {
+                 new Chart(ctx, {
+                    type: 'bar', data: { labels: labels, datasets: [{ label: '原始得分', data: data, backgroundColor: backgroundColors }] },
+                    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, max: 40 } } }
+                });
+            }
+        };
+        
+        window.downloadSingle = async (id, name) => {
+            const { jsPDF } = window.jspdf; const element = document.getElementById(`company-${idx}`); if (!element) return;
+            alert('準備產生 PDF，請稍候...');
+            try {
+                const canvas = await html2canvas(element, { scale: 2, useCORS: true, logging: false });
+                const pdf = new jsPDF('p', 'mm', 'a4'); const pdfWidth = pdf.internal.pageSize.getWidth(); const pageHeight = pdf.internal.pageSize.getHeight();
+                const imgData = canvas.toDataURL('image/png', 1.0); const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+                let heightLeft = imgHeight; let position = 0;
+                pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight); heightLeft -= pageHeight;
+                while (heightLeft > 0) { position = heightLeft - imgHeight; pdf.addPage(); pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight); heightLeft -= pageHeight; }
+                pdf.save(`${name.trim()}_永續評分報告.pdf`);
+            } catch (err) { console.error("PDF 產生失敗:", err); alert("抱歉，產生 PDF 時發生錯誤。"); }
+        };
+
+        nextStep2Btn.addEventListener('click', startAnalysis);
+        restartBtn.addEventListener('click', () => window.location.reload());
+        setupConnectionSection();
+        setupUploadSection();
+        updateStepUI(1);
+    });
+    </script>
+</body>
+</html>
+
