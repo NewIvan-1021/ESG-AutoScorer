@@ -1,10 +1,11 @@
 import os
 import json
 import asyncio
+import logging
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import List, Dict, Optional
+from pydantic import BaseModel, Field
+from typing import List, Dict, Optional, Any
 from dotenv import load_dotenv
 import google.generativeai as genai
 from pypdf import PdfReader
@@ -14,12 +15,21 @@ import io
 load_dotenv()
 API_KEY = os.getenv("GOOGLE_API_KEY")
 
-app = FastAPI()
+# --- 日誌設定 ---
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+app = FastAPI(
+    title="ESG 報告書自動評分系統 API",
+    description="提供基於 TCSA 準則的 AI 評分功能",
+    version="1.0.1",
+)
+
 
 # --- CORS 中介軟體設定 ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"], # 為了開發方便，暫時允許所有來源
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -27,15 +37,17 @@ app.add_middleware(
 
 # --- AI 模型設定 ---
 if not API_KEY:
-    print("🔴 致命錯誤：找不到 GOOGLE_API_KEY。請檢查您的 .env 檔案是否已建立且內容正確。")
+    logger.error("🔴 致命錯誤：找不到 GOOGLE_API_KEY。請檢查您的 .env 檔案是否已建立且內容正確。")
 else:
     try:
         genai.configure(api_key=API_KEY)
-        print("✅ Google AI API Key 已成功設定。")
+        logger.info("✅ Google AI API Key 已成功設定。")
     except Exception as e:
-        print(f"🔴 致命錯誤：設定 Google AI API Key 時發生錯誤: {e}")
+        logger.error(f"🔴 致命錯誤：設定 Google AI API Key 時發生錯誤: {e}")
 
-# --- Pydantic 資料模型 ---
+# --- Pydantic 完整的資料模型 (用於驗證與 API 文件) ---
+# 這些模型確保了從 AI 接收和發送到前端的資料結構都是正確的。
+
 class SubCriterionScore(BaseModel):
     title: str
     max_score: float
@@ -45,14 +57,35 @@ class CriterionScore(BaseModel):
     title: str
     max_score: float
     score: float
-    sub_criteria: List[SubCriterionScore]
+    sub_criteria: List[SubCriterionScore] = Field(default_factory=list)
 
 class SectionScore(BaseModel):
     title: str
     max_score: float
     score: float
     ai_comment: Optional[str] = None
-    criteria: List[CriterionScore]
+    criteria: List[CriterionScore] = Field(default_factory=list)
+
+class BreakdownItem(BaseModel):
+    id: str
+    raw_score: Optional[float] = 0.0
+    raw_max_score: Optional[float] = 0.0
+    ai_comment: Optional[str] = None
+    sections: List[SectionScore] = Field(default_factory=list)
+
+class TotalsScore(BaseModel):
+    report: float
+    media: float
+    final: float
+
+class ScoringResult(BaseModel):
+    company: str
+    overview_comment: Optional[str] = None
+    strengths: Optional[Dict[str, List[str]]] = Field(default_factory=dict)
+    improvements: Optional[Dict[str, List[str]]] = Field(default_factory=dict)
+    breakdown: List[BreakdownItem] = Field(default_factory=list)
+    totals: Optional[TotalsScore] = None
+
 
 # --- 核心功能函式 ---
 
@@ -64,17 +97,18 @@ def extract_text_from_pdf_sync(file_content: bytes, filename: str) -> str:
         text = " ".join([page.extract_text() or "" for page in reader.pages])
         return " ".join(text.split())
     except Exception as e:
-        print(f"🔴 錯誤：處理 PDF 檔案 '{filename}' 時失敗: {e}")
+        logger.error(f"🔴 處理 PDF 檔案 '{filename}' 時失敗: {e}")
         return f"錯誤：無法讀取 PDF 檔案 '{filename}'。檔案可能已損壞或格式不支援。"
 
 def call_gemini_for_scoring_sync(company_name: str, pdf_text: str, website_url: str) -> dict:
-    """同步地呼叫 Gemini AI 進行評分"""
+    """同步地呼叫 Gemini AI 進行評分，並包含更穩健的錯誤處理"""
     if not API_KEY:
-        return { "company": company_name, "overview_comment": "後端 AI 服務未初始化：缺少 API Key。", "totals": {}, "strengths": {}, "improvements": {}, "breakdown": [] }
+        return { "company": company_name, "overview_comment": "後端 AI 服務未初始化：缺少 API Key。", "totals": None, "strengths": {}, "improvements": {}, "breakdown": [] }
 
     generation_config = {"response_mime_type": "application/json"}
     model = genai.GenerativeModel(model_name="gemini-1.5-flash-latest", generation_config=generation_config)
     
+    # 在 Prompt 中再次強調 JSON 格式的嚴格性
     prompt = f"""
     請你扮演一位專業且嚴謹的台灣企業永續獎(TCSA)評審。
     你的任務是根據我提供的企業永續報告書內文和官方網站，依照以下的 TCSA 詳細評選準則，逐項進行評分。
@@ -85,7 +119,8 @@ def call_gemini_for_scoring_sync(company_name: str, pdf_text: str, website_url: 
     - **報告書內文摘要:** {pdf_text[:15000]}... (僅顯示前 15000 字)
 
     ## 你的任務與輸出格式
-    請嚴格依照以下 JSON 格式回傳你的評分結果。
+    請**嚴格**依照以下 JSON 格式回傳你的評分結果。你的整個輸出**必須**是一個單一、無註解、且嚴格符合 RFC 8259 規範的 JSON 物件。
+    - **重要**: 所有 key 和 string value 都必須使用雙引號 `""`。
     - **重要**: 你必須為 `sub_criteria` 陣列中的每一個項目評分，分數級距為 0.5。
     - **重要**: `criteria` 的 `score` 必須是其底下所有 `sub_criteria` 分數的總和。
     - **重要**: `sections` 的 `score` 必須是其底下所有 `criteria` 分數的總和。
@@ -157,10 +192,13 @@ def call_gemini_for_scoring_sync(company_name: str, pdf_text: str, website_url: 
     """
     try:
         response = model.generate_content(prompt)
+        # 移除 AI 可能回傳的 markdown 標籤
         cleaned_response = response.text.strip().replace("```json", "").replace("```", "")
+        
+        # 嘗試解析 JSON
         ai_data = json.loads(cleaned_response)
 
-        # --- 分數加權計算 ---
+        # --- 分數加權計算 (使用 .get() 來安全地存取資料) ---
         report_breakdown = next((item for item in ai_data.get("breakdown", []) if item.get("id") == "report"), {})
         media_breakdown = next((item for item in ai_data.get("breakdown", []) if item.get("id") == "media"), {})
 
@@ -180,46 +218,78 @@ def call_gemini_for_scoring_sync(company_name: str, pdf_text: str, website_url: 
         }
         return ai_data
 
+    except json.JSONDecodeError as e:
+        logger.error(f"🔴 JSON 解析失敗: {e}")
+        logger.error("👇 AI 回傳的原始文字 (可能有問題) 👇")
+        logger.error(cleaned_response)
+        logger.error("👆 AI 回傳的原始文字 (可能有問題) 👆")
+        # ✅ 修正點：將 totals 的值從 {} 改為 None
+        return { "company": company_name, "overview_comment": f"AI 分析時發生嚴重錯誤: JSON 解析失敗 - {e}。請檢查後端終端機日誌以獲取 AI 的原始回應。", "totals": None, "strengths": {}, "improvements": {}, "breakdown": [] }
     except Exception as e:
-        print(f"🔴 錯誤：呼叫 Gemini AI 或解析其回應時失敗: {e}")
-        return { "company": company_name, "overview_comment": f"AI 分析時發生嚴重錯誤: {e}", "totals": {}, "strengths": {}, "improvements": {}, "breakdown": [] }
+        logger.error(f"🔴 呼叫 Gemini AI 或處理其回應時發生未預期的錯誤: {e}")
+        # ✅ 修正點：將 totals 的值從 {} 改為 None
+        return { "company": company_name, "overview_comment": f"AI 分析時發生嚴重錯誤: {e}", "totals": None, "strengths": {}, "improvements": {}, "breakdown": [] }
 
 # --- API 端點 ---
 
-@app.get("/health")
+@app.get("/health", tags=["General"])
 def health_check():
     """健康檢查端點"""
     return {"status": "ok", "message": "後端伺服器靜靜的等待著"}
 
 async def process_single_file(file_content: bytes, filename: str, company_name: str, website_url: str) -> dict:
+    """非同步地處理單一檔案的 PDF 提取與 AI 評分"""
     loop = asyncio.get_event_loop()
     try:
-        print(f"ℹ️  開始處理檔案: {filename}")
+        logger.info(f"ℹ️  開始處理檔案: {filename}")
+        # 在執行緒池中運行同步的 PDF 提取函數
         pdf_text = await loop.run_in_executor(None, extract_text_from_pdf_sync, file_content, filename)
         
         if pdf_text.startswith("錯誤："):
-            return { "company": company_name, "overview_comment": pdf_text, "totals": {}, "strengths": {}, "improvements": {}, "breakdown": [] }
+            return { "company": company_name, "overview_comment": pdf_text, "totals": None, "strengths": {}, "improvements": {}, "breakdown": [] }
 
+        # 在執行緒池中運行同步的 AI 呼叫函數
         ai_result = await loop.run_in_executor(None, call_gemini_for_scoring_sync, company_name, pdf_text, website_url)
-        print(f"✅ 成功處理檔案: {filename}")
+        logger.info(f"✅ 成功處理檔案: {filename}")
         return ai_result
     except Exception as e:
-        print(f"🔴 錯誤：在 process_single_file 中處理檔案 '{filename}' 時發生未預期的錯誤: {e}")
-        return { "company": company_name, "overview_comment": f"處理檔案時發生嚴重錯誤: {e}", "totals": {}, "strengths": {}, "improvements": {}, "breakdown": [] }
+        logger.error(f"🔴 在 process_single_file 中處理檔案 '{filename}' 時發生未預期的錯誤: {e}", exc_info=True)
+        return { "company": company_name, "overview_comment": f"處理檔案 '{filename}' 時發生嚴重錯誤，請檢查後端日誌。", "totals": None, "strengths": {}, "improvements": {}, "breakdown": [] }
 
-@app.post("/scoring/batch", response_model=List[dict])
+@app.post("/scoring/batch", response_model=List[ScoringResult], tags=["Scoring"])
 async def scoring_batch_endpoint(
     files: List[UploadFile] = File(...),
     company_names: List[str] = Form(...),
     website_urls: List[str] = Form(...)
 ):
+    """接收多份 PDF 檔案及對應的公司資料，並行處理後回傳評分結果列表。"""
     if not (len(files) == len(company_names) == len(website_urls)):
         raise HTTPException(status_code=400, detail="檔案、公司名稱和網站 URL 的數量必須一致。")
 
-    tasks = [process_single_file(await file.read(), file.filename, company_names[i], website_urls[i]) for i, file in enumerate(files)]
+    # 建立一個非同步任務列表
+    tasks = []
+    for i, file in enumerate(files):
+        if file.content_type != 'application/pdf':
+             logger.warning(f"⚠️  檔案 '{file.filename}' 不是 PDF，將略過處理。")
+             continue
+        task = process_single_file(await file.read(), file.filename, company_names[i], website_urls[i])
+        tasks.append(task)
+    
+    if not tasks:
+        raise HTTPException(status_code=400, detail="未提供任何有效的 PDF 檔案。")
+
+    # 等待所有任務完成
     results = await asyncio.gather(*tasks)
     
     if not results:
-        raise HTTPException(status_code=500, detail="所有檔案處理失敗，未產生任何結果。")
+        raise HTTPException(status_code=500, detail="所有檔案處理失敗，未產生任何結果。請檢查後端日誌。")
+    
+    # FastAPI 會使用 Pydantic 的 response_model (ScoringResult) 來自動驗證 results 的格式
     return results
+
+# --- 為了方便本地開發，可以直接執行此檔案 ---
+if __name__ == "__main__":
+    import uvicorn
+    # 執行 uvicorn 伺服器，並啟用自動重載
+    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
 
