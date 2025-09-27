@@ -273,6 +273,21 @@
 
         let uploadedFiles = [];
         
+        const DEFAULT_RUBRIC = {
+            report: {
+                id: "report", sections: [
+                    { title: "完整性", max_score: 40, criteria: [ { title: "重大性議題", max_score: 8, sub_criteria: [ {title: "是否清楚列出或呈現重大性議題分析之矩陣圖或其他圖表，且清楚標明各項議題的種類", max_score: 2}, {title: "是否清楚說明組織重大性議題分析之過程與方法", max_score: 2}, {title: "是否有呈現出重大性議題在報告書中的連結性", max_score: 2}, {title: "是否清楚說明重大性議題對於組織的意義", max_score: 2} ] }, { title: "利害關係人共融", max_score: 6, sub_criteria: [ {title: "是否清楚列出組織的利害關係人之種類與意義", max_score: 1}, {title: "是否清楚說明各種利害關係人議合之方法", max_score: 2}, {title: "是否清楚說明各種利害關係人關注之議題", max_score: 1}, {title: "是否清楚說明組織針對各項議題的因應之道", max_score: 2} ] }, { title: "策略", max_score: 12, sub_criteria: [ {title: "報告書中是否有說明永續對組織的重要性與意義(價值鏈的呈現)", max_score: 2}, {title: "報告書中是否有揭露組織營運相關之內外部環境分析", max_score: 3}, {title: "報告書中是否有揭露組織對於環境、社會、治理等面向的發展原則與管理機制(長期策略)", max_score: 3}, {title: "是否有在各個面向或是各類重大性議題說明組織未來改善目標(中期策略)", max_score: 2}, {title: "針對各項重大性議題是否有設定隔年度之量化或是質化目標(短期策略)", max_score: 2} ] }, { title: "組織介紹", max_score: 2, sub_criteria: [ {title: "揭露資訊：主要產品與服務、財務績效、地理分布、員工資訊、整體環境與組織營運之關聯性等", max_score: 2} ] }, { title: "重大永續規範執行及資訊揭露", max_score: 12, sub_criteria: [ {title: "氣候相關財務揭露(TCFD)", max_score: 3}, {title: "永續會計準則委員會準則(SASB)", max_score: 3}, {title: "自然相關財務揭露(TNFD)", max_score: 3}, {title: "國際財務報導準則(IFRS) S1,S2揭露", max_score: 3} ] } ] },
+                    { title: "可信度", max_score: 35, criteria: [ { title: "管理流程", max_score: 10, sub_criteria: [ {title: "報告揭露採用之指引與準則", max_score: 1}, {title: "是否揭露報告書主要負責單位", max_score: 1}, {title: "報告書的管理方式", max_score: 4}, {title: "針對各項重大性議題皆說明管理方針", max_score: 4} ] }, { title: "利害關係人回應", max_score: 5, sub_criteria: [ {title: "針對利害關係人關注之議題，組織是否實際回應議題，並提出相對應之作為、策略與規劃等政策", max_score: 2}, {title: "組織是否有針對組織鑑別出之實質性議題進行回應，並提出相對應之策略與作為", max_score: 3} ] }, { title: "治理", max_score: 5, sub_criteria: [ {title: "是否有說明組織組織針對永續報告的責任單位", max_score: 1}, {title: "報告書是否有說明董事會的薪酬與永續績效的連結性", max_score: 2}, {title: "報告書是否有揭露組織組織的風險與可能之機會(因應之道)", max_score: 1}, {title: "組織績效指標管理方針是否與組織永續原則一致", max_score: 1} ] }, { title: "績效", max_score: 5, sub_criteria: [ {title: "績效之揭露是否完整(重大性議題涵蓋經濟、環境與社會，是否有質化的說明與數據)", max_score: 2}, {title: "重大性議題是否有量化的圖表說明", max_score: 1}, {title: "是否有揭露過去負面訊息", max_score: 1}, {title: "績效的呈現是否易懂", max_score: 1} ] }, { title: "保證/確信", max_score: 10, sub_criteria: [ {title: "是否已建立永續資訊編制內部控制制度及相關流程", max_score: 2}, {title: "永續資訊編制內部控制制度及其內部稽核執行情形說明", max_score: 3}, {title: "是否有外部第三方獨立保證/確信之佐證資料", max_score: 2}, {title: "外部保證是否有說明保證等級、範疇與方法(中度/有限等級者最多得2分，高度/合理等級者做多可得3分)", max_score: 3} ] } ] },
+                    { title: "溝通性", max_score: 25, criteria: [ { title: "展現", max_score: 10, sub_criteria: [ {title: "版面是否圖表與文字說明比例恰當，內容清晰且易於閱讀", max_score: 3}, {title: "具有英文版報告書", max_score: 3}, {title: "展現創新的資訊呈現方式", max_score: 2}, {title: "報告書之份量是否適當(頁數120-150頁為參考範圍)", max_score: 2} ] }, { title: "利害關係人共融", max_score: 5, sub_criteria: [ {title: "組織永續報告書是否公開下載", max_score: 1}, {title: "是否有說明利害關係人議合(溝通資訊)的方法", max_score: 2}, {title: "利害關係人議合的結果，組織是否公開揭露其相對應的回應與作為", max_score: 2} ] }, { title: "架構", max_score: 10, sub_criteria: [ {title: "是否清楚整理並呈現本年度的亮點作為報告書的總結", max_score: 3}, {title: "完整的索引設計(包括GRI, SASB及其他重要規範等)", max_score: 3}, {title: "報告書附有清楚的連結，使讀者可透過網頁的說明獲得更細節的資訊", max_score: 2}, {title: "架構呈現完整易於查閱", max_score: 2} ] } ] }
+                ]
+            },
+            media: {
+                id: "media", sections: [
+                    { title: "多元媒體應用及內容品質", max_score: 19, criteria: [ { title: "組織永續專區", max_score: 3, sub_criteria: [ {title: "設置組織永續專區", max_score: 0.5}, {title: "是否將組織永續專區連結設於首頁", max_score: 0.5}, {title: "是否提供報告書下載", max_score: 0.5}, {title: "是否有網站地圖", max_score: 0.5}, {title: "站內搜尋引擎", max_score: 0.5}, {title: "是否將組織永續專區分類且內容充實", max_score: 0.5} ] }, { title: "網頁管理與即時更新", max_score: 4, sub_criteria: [ {title: "判斷依據：由最新消息觀察網頁是否為最新訊息、是否即時更新", max_score: 4} ] }, { title: "電子版報告書與關鍵資訊連結", max_score: 4, sub_criteria: [ {title: "按照永續報告定義，須符合環境、社會與治理(ESG)以及供應鏈管理等四項議題之揭露", max_score: 4} ] }, { title: "多元媒體展現", max_score: 4, sub_criteria: [ {title: "文字說明", max_score: 1}, {title: "圖表說明", max_score: 1}, {title: "使用影片", max_score: 1}, {title: "互動式網頁", max_score: 1} ] }, { title: "溝通回饋管道與社群網絡互動", max_score: 4, sub_criteria: [ {title: "線上回饋機制之應用(網路填寫或連結至電子信箱)", max_score: 1}, {title: "線上互動式機制之應用", max_score: 1}, {title: "社交網站之應用", max_score: 1}, {title: "提供訂閱電子報", max_score: 1} ] } ] }
+                ]
+            }
+        };
+
         const updateStepUI = (step) => {
             steps.forEach((s, index) => {
                 s.classList.remove('step-active', 'step-completed');
@@ -416,28 +431,42 @@
         };
 
         const renderCompanyCard = (r, idx) => {
-            const finalScore = r.totals?.final ?? 0;
-            const level = finalScore >= 85 ? { text: '優秀', color: 'green', textColor: 'text-green-800', bgColor: 'bg-green-100', borderColor: 'border-green-300' } : 
-                          finalScore >= 70 ? { text: '良好', color: 'sky', textColor: 'text-sky-800', bgColor: 'bg-sky-100', borderColor: 'border-sky-300' } : 
-                          finalScore >= 60 ? { text: '合格', color: 'amber', textColor: 'text-amber-800', bgColor: 'bg-amber-100', borderColor: 'border-amber-300' } : 
-                                           { text: '待加強', color: 'red', textColor: 'text-red-800', bgColor: 'bg-red-100', borderColor: 'border-red-300' };
+            const isSuccess = r.totals !== null;
+            const finalScore = isSuccess ? r.totals.final : null;
 
-            const reportBreakdown = r.breakdown?.find(b => b.id === 'report');
-            const mediaBreakdown = r.breakdown?.find(b => b.id === 'media');
+            const getLevel = (score) => {
+                if (score === null) return { text: '評分失敗', textColor: 'text-red-800', bgColor: 'bg-red-100', borderColor: 'border-red-300' };
+                if (score >= 85) return { text: '優秀', textColor: 'text-green-800', bgColor: 'bg-green-100', borderColor: 'border-green-300' };
+                if (score >= 70) return { text: '良好', textColor: 'text-sky-800', bgColor: 'bg-sky-100', borderColor: 'border-sky-300' };
+                if (score >= 60) return { text: '合格', textColor: 'text-amber-800', bgColor: 'bg-amber-100', borderColor: 'border-amber-300' };
+                return { text: '待加強', textColor: 'text-red-800', bgColor: 'bg-red-100', borderColor: 'border-red-300' };
+            };
+            const level = getLevel(finalScore);
+            
+            let reportBreakdown = isSuccess ? r.breakdown?.find(b => b.id === 'report') : DEFAULT_RUBRIC.report;
+            let mediaBreakdown = isSuccess ? r.breakdown?.find(b => b.id === 'media') : DEFAULT_RUBRIC.media;
 
             const renderQualitativeFeedback = (feedback, type) => {
                 const icon = type === 'strengths' ? `<svg class="w-6 h-6 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 18.734V12.5A2.5 2.5 0 019.5 10h4.5z"></path></svg>` : `<svg class="w-6 h-6 text-amber-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>`;
                 const title = type === 'strengths' ? '優點分析' : '可改善建議';
                 
-                if (!feedback || Object.keys(feedback).length === 0) return `<div class="bg-stone-50 rounded-lg p-6 border border-stone-200"><div class="flex items-start"><h4 class="text-lg font-semibold text-zinc-800 flex items-center">${icon} ${title}</h4></div><p class="text-sm text-zinc-500 mt-4">(AI 未提供相關說明)</p></div>`;
-                
-                const content = Object.entries(feedback).map(([category, points]) => {
-                    const pointsArray = Array.isArray(points) ? points : [points];
-                    return `<div class="mt-3"><h5 class="font-semibold text-zinc-700">${category}</h5><ul class="pl-5 mt-1 text-zinc-600 list-disc space-y-1">${pointsArray.map(p => `<li>${p}</li>`).join('')}</ul></div>`;
-                }).join('');
+                let contentHTML = `<p class="text-sm text-zinc-500 mt-4">(AI 未提供相關說明)</p>`;
+                if (isSuccess && feedback && Object.keys(feedback).length > 0) {
+                     const feedbackContent = Object.entries(feedback).map(([category, points]) => {
+                        const pointsArray = Array.isArray(points) ? points : [points];
+                        if(pointsArray.length === 0) return '';
+                        return `<div class="mt-3"><h5 class="font-semibold text-zinc-700">${category}</h5><ul class="pl-5 mt-1 text-zinc-600 list-disc space-y-1">${pointsArray.map(p => `<li>${p}</li>`).join('')}</ul></div>`;
+                    }).join('');
+                    if(feedbackContent) contentHTML = feedbackContent;
+                }
 
-                return `<div class="bg-stone-50 rounded-lg p-6 border border-stone-200"><div class="flex items-start"><h4 class="text-lg font-semibold text-zinc-800 flex items-center">${icon} ${title}</h4></div>${content}</div>`;
+                return `<div class="bg-stone-50 rounded-lg p-6 border border-stone-200 h-full"><div class="flex items-start"><h4 class="text-lg font-semibold text-zinc-800 flex items-center">${icon} ${title}</h4></div>${contentHTML}</div>`;
             };
+
+            const scoreText = (score, max) => score != null ? `${score.toFixed(1)} / ${max}` : `- / ${max}`;
+            const percentText = (score, max) => score != null && max > 0 ? `${(score / max * 100).toFixed(1)}%` : `-`;
+            const weightedScoreText = (score, max) => score != null ? `${score.toFixed(1)}` : `-`;
+
 
             const overviewTableHTML = `
                 <table class="w-full text-sm text-left text-zinc-700">
@@ -455,14 +484,14 @@
                         ].map(data => `
                             <tr class="border-b border-stone-200">
                                 <td class="py-3 font-medium text-zinc-800">${data.title}</td>
-                                <td class="py-3 text-center">${(data.weightedScore ?? 0).toFixed(1)} / ${data.max}</td>
-                                <td class="py-3 text-center">${(data.max > 0 ? (data.weightedScore ?? 0) / data.max * 100 : 0).toFixed(1)}%</td>
+                                <td class="py-3 text-center">${scoreText(data.weightedScore, data.max)}</td>
+                                <td class="py-3 text-center">${percentText(data.weightedScore, data.max)}</td>
                             </tr>
                             ${(data.item?.sections || []).map(sec => `
                                 <tr class="bg-stone-50">
                                     <td class="py-2 pl-4 text-zinc-600">- ${sec.title}</td>
-                                    <td class="py-2 text-center text-zinc-600">${(sec.score ?? 0).toFixed(1)} / ${sec.max_score}</td>
-                                    <td class="py-2 text-center text-zinc-600">${(sec.max_score > 0 ? (sec.score ?? 0) / sec.max_score * 100 : 0).toFixed(1)}%</td>
+                                    <td class="py-2 text-center text-zinc-600">${scoreText(sec.score, sec.max_score)}</td>
+                                    <td class="py-2 text-center text-zinc-600">${percentText(sec.score, sec.max_score)}</td>
                                 </tr>`).join('')}
                         `).join('')}
                     </tbody>
@@ -472,19 +501,19 @@
                 <div class="bg-stone-50 p-4 rounded-lg border border-stone-200 mb-4">
                     <div class="font-semibold text-zinc-800 flex justify-between items-center">
                         <span>${s.title}</span>
-                        <span>${(s.score ?? 0).toFixed(1)} / ${s.max_score}</span>
+                        <span>${scoreText(s.score, s.max_score)}</span>
                     </div>
                     ${(s.criteria || []).map(c => `
                         <details class="mt-3 border-t border-stone-200 pt-2" open>
                             <summary class="flex justify-between items-center py-1 font-medium text-zinc-700">
                                 <span>${c.title}</span>
-                                <span class="font-semibold">${(c.score ?? 0).toFixed(1)} / ${c.max_score}</span>
+                                <span class="font-semibold">${scoreText(c.score, c.max_score)}</span>
                             </summary>
                             <ul class="mt-1 pl-4 text-xs text-zinc-500 space-y-1">
                             ${(c.sub_criteria || []).map(sc => `
                                 <li class="flex justify-between items-center py-0.5">
                                     <span>- ${sc.title}</span>
-                                    <span class="font-medium">${(sc.score ?? 0).toFixed(1)} / ${sc.max_score}</span>
+                                    <span class="font-medium">${scoreText(sc.score, sc.max_score)}</span>
                                 </li>`).join('')}
                             </ul>
                         </details>
@@ -500,15 +529,15 @@
                 <!-- 區塊一：頂部資訊卡 -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
                     <div class="bg-stone-50 p-5 rounded-lg border border-stone-200"><h3 class="text-sm font-medium text-zinc-500 mb-1">評分公司</h3><p class="text-2xl font-bold text-zinc-800 truncate" title="${r.company}">${r.company}</p></div>
-                    <div class="bg-stone-50 p-5 rounded-lg border border-stone-200"><h3 class="text-sm font-medium text-zinc-500 mb-1">總得分</h3><p class="text-2xl font-bold text-zinc-800">${finalScore.toFixed(1)} <span class="text-base font-normal text-zinc-500">/ 100</span></p></div>
+                    <div class="bg-stone-50 p-5 rounded-lg border border-stone-200"><h3 class="text-sm font-medium text-zinc-500 mb-1">總得分</h3><p class="text-2xl font-bold text-zinc-800">${finalScore != null ? finalScore.toFixed(1) : '-'} <span class="text-base font-normal text-zinc-500">/ 100</span></p></div>
                     <div class="${level.bgColor} ${level.textColor} p-5 rounded-lg border ${level.borderColor}"><h3 class="text-sm font-medium opacity-80 mb-1">評分等級</h3><p class="text-2xl font-bold">${level.text}</p></div>
-                    <div class="bg-stone-50 p-5 rounded-lg border border-stone-200"><h3 class="text-sm font-medium text-zinc-500 mb-1">分項得分 (加權後)</h3><p class="text-sm">報告書: <b class="font-semibold">${(r.totals?.report ?? 0).toFixed(1)}</b>/60</p><p class="text-sm mt-1">多元媒體: <b class="font-semibold">${(r.totals?.media ?? 0).toFixed(1)}</b>/40</p></div>
+                    <div class="bg-stone-50 p-5 rounded-lg border border-stone-200"><h3 class="text-sm font-medium text-zinc-500 mb-1">分項得分 (加權後)</h3><p class="text-sm">報告書: <b class="font-semibold">${weightedScoreText(r.totals?.report, 60)}</b>/60</p><p class="text-sm mt-1">多元媒體: <b class="font-semibold">${weightedScoreText(r.totals?.media, 40)}</b>/40</p></div>
                 </div>
                 
                 <!-- 區塊二：AI 總評與質化分析 -->
                 <div>
                     <h3 class="text-2xl font-bold text-zinc-800 mb-4">AI 質化分析</h3>
-                    ${r.overview_comment ? `<div class="bg-green-50 border-l-4 border-green-400 p-4 mb-6 rounded-r-lg text-green-800"><b class="font-semibold">AI 總評：</b>${r.overview_comment}</div>` : ''}
+                    <div class="bg-green-50 border-l-4 ${isSuccess ? 'border-green-400' : 'border-red-400'} p-4 mb-6 rounded-r-lg ${isSuccess ? 'text-green-800' : 'text-red-800'}"><b class="font-semibold">AI 總評：</b>${r.overview_comment || 'AI 分析失敗，請檢查後端日誌。'}</div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         ${renderQualitativeFeedback(r.strengths, 'strengths')}
                         ${renderQualitativeFeedback(r.improvements, 'improvements')}
@@ -545,21 +574,22 @@
         };
         
         const initializeCharts = (r, idx) => {
-            const reportBreakdown = r.breakdown?.find(b => b.id === 'report');
-            const mediaBreakdown = r.breakdown?.find(b => b.id === 'media');
+            const isSuccess = r.totals !== null;
+            const reportBreakdown = isSuccess ? r.breakdown?.find(b => b.id === 'report') : DEFAULT_RUBRIC.report;
+            const mediaBreakdown = isSuccess ? r.breakdown?.find(b => b.id === 'media') : DEFAULT_RUBRIC.media;
             const labels = []; 
             const scores = [];
 
             if (reportBreakdown && reportBreakdown.sections) {
                 reportBreakdown.sections.forEach(sec => { 
                     labels.push(sec.title || '報告書項目'); 
-                    scores.push(((sec.score ?? 0) / (sec.max_score || 1)) * 100);
+                    scores.push(isSuccess ? ((sec.score ?? 0) / (sec.max_score || 1)) * 100 : 0);
                 });
             }
             if (mediaBreakdown && mediaBreakdown.sections) {
                  mediaBreakdown.sections.forEach(sec => { 
                     labels.push(sec.title || '多元媒體項目'); 
-                    scores.push(((sec.score ?? 0) / (sec.max_score || 1)) * 100);
+                    scores.push(isSuccess ? ((sec.score ?? 0) / (sec.max_score || 1)) * 100 : 0);
                 });
             }
 
