@@ -3,6 +3,7 @@ import os
 import json
 import asyncio
 import logging
+import re # 引入正規表示式模組
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -21,11 +22,10 @@ API_KEY = os.getenv("GOOGLE_API_KEY")
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# --- 備案模型清單 (只使用 Gemini 系列模型) ---
-# 將優先嘗試列表中的第一個模型，若失敗則依序嘗試下一個
+# --- 備案模型清單 (依照您的要求維持不變) ---
 FALLBACK_MODELS = [
-    "gemini-1.5-flash-latest",
-    "gemini-1.5-pro-latest",
+    "gemini-2.5-pro",
+    "gemini-2.5-flash",
 ]
 
 # --- AI SDK 初始化 ---
@@ -41,7 +41,7 @@ except Exception as e:
 app = FastAPI(
     title="ESG 報告書自動評分系統 API",
     description="提供基於 TCSA 準則的 AI 評分功能",
-    version="2.2.0", # 🎉 介面與 PDF 優化版本
+    version="2.5.0", # 🎉 增強 AI 提示與證據追溯
 )
 
 # --- CORS 中介軟體設定 ---
@@ -53,7 +53,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- Pydantic 完整的資料模型 (用於驗證與 API 文件) ---
+# --- Pydantic 完整的資料模型 (維持不變) ---
 class SubCriterionScore(BaseModel):
     title: str
     max_score: float
@@ -97,6 +97,7 @@ class ScoringResult(BaseModel):
 
 def _get_prompt(company_name: str, pdf_text: str, website_url: str) -> str:
     """產生用於 AI 評分的完整提示文字"""
+    # 改善：強化 rationale 的要求，使其包含頁碼或證據
     return f"""
     請你扮演一位專業且嚴謹的台灣企業永續獎(TCSA)評審。
     你的任務是根據我提供的企業永續報告書內文和官方網站，依照以下的 TCSA 詳細評選準則，逐項進行評分。
@@ -110,7 +111,7 @@ def _get_prompt(company_name: str, pdf_text: str, website_url: str) -> str:
     請**嚴格**依照以下 JSON 格式回傳你的評分結果。你的整個輸出**必須**是一個單一、無註解、且嚴格符合 RFC 8259 規範的 JSON 物件。
     - **重要**: 所有 key 和 string value 都必須使用雙引號 `""`。
     - **重要**: 你必須為 `sub_criteria` 陣列中的每一個項目評分，分數級距為 0.5。
-    - **重要**: 對於每一個 `sub_criteria` 項目，你都必須提供一個 `rationale` 欄位，用一句話簡潔地說明你給予該分數的**主要理由或文本證據**。
+    - **重要**: 對於每一個 `sub_criteria` 項目，你都必須提供一個 `rationale` 欄位。這個欄位必須簡潔地說明你給予該分數的**主要理由**，並且**盡可能**包含具體的**文本證據**，例如頁碼、圖表編號或章節名稱 (例如: "報告書第23頁的圖表顯示..." 或 "官網『永續專區』明確揭露...")。
     - **重要**: `criteria` 的 `score` 必須是其底下所有 `sub_criteria` 分數的總和。
     - **重要**: `sections` 的 `score` 必須是其底下所有 `criteria` 分數的總和。
     - **重要**: `strengths` 和 `improvements` 必須是物件(object)，其 `key` 為評分構面（完整性、可信度、溝通性、多元媒體應用），`value` 為該構面下的優點或建議列表(string array)。
@@ -129,7 +130,7 @@ def _get_prompt(company_name: str, pdf_text: str, website_url: str) -> str:
               "title": "完整性", "max_score": 40.0,
               "criteria": [
                 {{ "title": "重大性議題", "max_score": 8.0, "sub_criteria": [ 
-                    {{"title": "是否清楚列出或呈現重大性議題分析之矩陣圖或其他圖表，且清楚標明各項議題的種類", "max_score": 2.0, "score": 0.0, "rationale": "報告書第XX頁呈現了清晰的重大性議題矩陣圖。"}}, 
+                    {{"title": "是否清楚列出或呈現重大性議題分析之矩陣圖或其他圖表，且清楚標明各項議題的種類", "max_score": 2.0, "score": 0.0, "rationale": "報告書p.15呈現了清晰的重大性議題矩陣圖。"}}, 
                     {{"title": "是否清楚說明組織重大性議題分析之過程與方法", "max_score": 2.0, "score": 0.0, "rationale": "未找到具體的分析過程與方法說明。"}}, 
                     {{"title": "是否有呈現出重大性議題在報告書中的連結性", "max_score": 2.0, "score": 0.0, "rationale": "..."}}, 
                     {{"title": "是否清楚說明重大性議題對於組織的意義", "max_score": 2.0, "score": 0.0, "rationale": "..."}} 
@@ -147,7 +148,7 @@ def _get_prompt(company_name: str, pdf_text: str, website_url: str) -> str:
                 {{ "title": "利害關係人回應", "max_score": 5.0, "sub_criteria": [ {{"title": "針對利害關係人關注之議題，組織是否實際回應議題，並提出相對應之作為、策略與規劃等政策", "max_score": 2.0, "score": 0.0, "rationale": "..."}}, {{"title": "組織是否有針對組織鑑別出之實質性議題進行回應，並提出相對應之策略與作為", "max_score": 3.0, "score": 0.0, "rationale": "..."}} ] }},
                 {{ "title": "治理", "max_score": 5.0, "sub_criteria": [ {{"title": "是否有說明組織組織針對永續報告的責任單位", "max_score": 1.0, "score": 0.0, "rationale": "..."}}, {{"title": "報告書是否有說明董事會的薪酬與永續績效的連結性", "max_score": 2.0, "score": 0.0, "rationale": "..."}}, {{"title": "報告書是否有揭露組織組織的風險與可能之機會(因應之道)", "max_score": 1.0, "score": 0.0, "rationale": "..."}}, {{"title": "組織績效指標管理方針是否與組織永續原則一致", "max_score": 1.0, "score": 0.0, "rationale": "..."}} ] }},
                 {{ "title": "績效", "max_score": 5.0, "sub_criteria": [ {{"title": "績效之揭露是否完整(重大性議題涵蓋經濟、環境與社會，是否有質化的說明與數據)", "max_score": 2.0, "score": 0.0, "rationale": "..."}}, {{"title": "重大性議題是否有量化的圖表說明", "max_score": 1.0, "score": 0.0, "rationale": "..."}}, {{"title": "是否有揭露過去負面訊息", "max_score": 1.0, "score": 0.0, "rationale": "..."}}, {{"title": "績效的呈現是否易懂", "max_score": 1.0, "score": 0.0, "rationale": "..."}} ] }},
-                {{ "title": "保證/確信", "max_score": 10.0, "sub_criteria": [ {{"title": "是否已建立永續資訊編制內部控制制度及相關流程", "max_score": 2.0, "score": 0.0, "rationale": "..."}}, {{"title": "永續資訊編制內部控制制度及其內部稽核執行情形說明", "max_score": 3.0, "score": 0.0, "rationale": "..."}}, {{"title": "是否有外部第三方獨立保證/確信之佐證資料", "max_score": 2.0, "score": 0.0, "rationale": "..."}}, {{"title": "外部保證是否有說明保證等級、範疇與方法(中度/有限等級者最多得2分，高度/合理等級者做多可得3分)", "max_score": 3.0, "score": 0.0, "rationale": "..."}} ] }}
+                {{ "title": "保證/確信", "max_score": 10.0, "sub_criteria": [ {{"title": "是否已建立永續資訊編制內部控制制度及相關流程", "max_score": 2.0, "score": 0.0, "rationale": "..."}}, {{"title": "永續資訊編制內部控制制度及其內部稽核執行情形說明", "max_score": 3.0, "score": 0.0, "rationale": "..."}}, {{"title": "是否有外部第三方獨立保證/確信之佐證資料", "max_score": 2.0, "score": 0.0, "rationale": "..."}}, {{"title": "外部保證是否有說明保證等級、範疇與方法(中度/有限等級者最多得2分，高度/合理等級者最多可得3分)", "max_score": 3.0, "score": 0.0, "rationale": "..."}} ] }}
               ]
             }},
             {{
@@ -186,12 +187,11 @@ def _calculate_final_scores(ai_data: Dict[str, Any]) -> Dict[str, Any]:
         report_breakdown = next((item for item in ai_data.get("breakdown", []) if item.get("id") == "report"), {})
         media_breakdown = next((item for item in ai_data.get("breakdown", []) if item.get("id") == "media"), {})
         
-        # 確保分數加總是安全的，即使 AI 沒有回傳 score
         report_raw_score = sum(s.get("score", 0) or 0 for s in report_breakdown.get("sections", []))
         report_raw_max = sum(s.get("max_score", 0) or 0 for s in report_breakdown.get("sections", []))
         
-        media_raw_score = sum(c.get("score", 0) or 0 for s in media_breakdown.get("sections", []) for c in s.get("criteria", []))
-        media_raw_max = sum(c.get("max_score", 0) or 0 for s in media_breakdown.get("sections", []) for c in s.get("criteria", []))
+        media_raw_score = sum(s.get("score", 0) or 0 for s in media_breakdown.get("sections", []))
+        media_raw_max = sum(s.get("max_score", 0) or 0 for s in media_breakdown.get("sections", []))
         
         report_scaled = (report_raw_score / report_raw_max) * 60 if report_raw_max > 0 else 0
         media_scaled = (media_raw_score / media_raw_max) * 40 if media_raw_max > 0 else 0
@@ -203,12 +203,27 @@ def _calculate_final_scores(ai_data: Dict[str, Any]) -> Dict[str, Any]:
         }
     except Exception as e:
         logger.error(f"🔴 計算最終分數時出錯: {e}", exc_info=True)
-        ai_data["totals"] = None # 如果計算失敗，則將 totals 設為 None
+        ai_data["totals"] = None
     return ai_data
 
+# --- 錯誤修正：增強 JSON 解析的穩定性 ---
 def _parse_ai_response(response_text: str) -> Dict[str, Any]:
-    """從 AI 的回應中解析出 JSON 物件"""
-    cleaned_text = response_text.strip().replace("```json", "").replace("```", "")
+    """從 AI 的回應中解析出 JSON 物件，並增加對常見錯誤的容錯能力"""
+    # 優先使用正規表示式尋找被 ```json ... ``` 包圍的區塊
+    match = re.search(r"```json\s*(\{.*?\})\s*```", response_text, re.DOTALL)
+    if match:
+        cleaned_text = match.group(1)
+    else:
+        # 如果沒有找到 markdown 區塊，則嘗試尋找第一個 '{' 到最後一個 '}' 的內容
+        start = response_text.find('{')
+        end = response_text.rfind('}')
+        if start != -1 and end != -1:
+            cleaned_text = response_text[start:end+1]
+        else:
+            # 如果連大括號都找不到，就直接使用原始文字
+            cleaned_text = response_text
+    
+    # 讓呼叫者去處理解析錯誤，以便我們可以記錄清理後的文字
     return json.loads(cleaned_text)
 
 def extract_text_from_pdf_sync(file_content: bytes, filename: str) -> str:
@@ -231,16 +246,20 @@ def call_gemini_for_scoring_sync(company_name: str, pdf_text: str, website_url: 
     generation_config = genai.types.GenerationConfig(response_mime_type="application/json")
     
     last_error = "未知的 AI 錯誤"
+    raw_response_text_for_logging = ""
+
     for model_name in FALLBACK_MODELS:
         try:
             logger.info(f"ℹ️  正在嘗試使用模型: {model_name}...")
+            # 關於 ALTS 的警告是正常的，在本地端開發時可忽略
             model = genai.GenerativeModel(model_name)
             response = model.generate_content(
                 contents=prompt,
                 generation_config=generation_config
             )
 
-            ai_data = _parse_ai_response(response.text)
+            raw_response_text_for_logging = response.text
+            ai_data = _parse_ai_response(raw_response_text_for_logging)
             ai_data_with_scores = _calculate_final_scores(ai_data)
             
             logger.info(f"✅ 模型 '{model_name}' 成功回傳並解析結果。")
@@ -249,7 +268,9 @@ def call_gemini_for_scoring_sync(company_name: str, pdf_text: str, website_url: 
         except json.JSONDecodeError as e:
             last_error = f"JSON 解析失敗 - {e}"
             logger.error(f"🔴 模型 '{model_name}' 回應的 JSON 格式錯誤: {e}")
-            logger.error(f"👇 AI 回傳的原始文字 (可能有問題) 👇\n{response.text}")
+            # --- 錯誤修正：優化日誌，印出清理後仍無法解析的文字 ---
+            cleaned_text_for_log = raw_response_text_for_logging.strip().replace("```json", "").replace("```", "")
+            logger.error(f"👇 嘗試解析的文字內容 (可能有問題) 👇\n{cleaned_text_for_log}")
         except Exception as e:
             last_error = str(e)
             logger.warning(f"⚠️ 模型 '{model_name}' 呼叫失敗: {e}。正在嘗試下一個備案模型...")
@@ -263,13 +284,11 @@ def call_gemini_for_scoring_sync(company_name: str, pdf_text: str, website_url: 
 @app.get("/health", tags=["General"])
 def health_check():
     """健康檢查端點，用於確認後端服務是否正常運行。"""
-    return {"status": "ok", "message": "後端伺服器運行中"}
+    return {"status": "ok", "message": "後端伺-服器運行中"}
 
 async def process_single_file(file_content: bytes, filename: str, company_name: str, website_url: str) -> dict:
     """
     非同步地處理單一檔案，包含 PDF 提取與 AI 評分。
-    使用 run_in_executor 將同步的 blocking I/O (檔案讀取) 與 CPU密集型任務 (AI 呼叫)
-    放到背景執行緒中，避免主事件循環被阻塞。
     """
     loop = asyncio.get_event_loop()
     try:
@@ -319,5 +338,10 @@ async def scoring_batch_endpoint(
 # --- 為了方便本地開發，可以直接執行此檔案 ---
 if __name__ == "__main__":
     import uvicorn
+    # 增加單元測試的說明
+    print("\n--- 系統資訊 ---")
+    print("若要執行單元測試，請安裝 pytest (`pip install pytest`)")
+    print("然後在終端機中執行 `pytest` 指令。")
+    print("----------------\n")
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
 
