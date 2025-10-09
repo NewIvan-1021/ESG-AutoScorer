@@ -1,47 +1,67 @@
-# 給這個工作流程取個名字，會顯示在 GitHub 的 Actions 頁面
-name: Python CI 程式碼自動測試
+# 流程名稱更新，以反映包含 CI 和 CD
+name: Python CI/CD 測試與部署流程
 
-# 觸發條件：當推送到 main 分支時執行
+# 觸發條件不變：當推送到 main 分支時執行
 on:
   push:
     branches:
       - main
 
-# 要執行的工作
+# 工作流程包含兩個主要工作：build-and-test (CI) 和 deploy (CD)
 jobs:
-  # 第一個工作的 ID，可以自己取名，例如 build-and-test
+  # --- 第一個工作：CI (建置與測試) ---
   build-and-test:
-    # 指定工作要在哪種作業系統的電腦上執行 (這裡用最新的 Ubuntu)
     runs-on: ubuntu-latest
-
-    # 這個工作的詳細步驟
     steps:
       # 步驟 1: 取得你的程式碼
-      # 小助理會把你的專案檔案下載到它用的那台電腦上
       - name: 取得程式碼
         uses: actions/checkout@v3
 
-      # 步驟 2: 設定 Python 環境
-      # 告訴小助理要安裝 Python，這裡指定 3.9 版本，你可以改成你需要的版本
+      # 步驟 2: 設定 Python 3.9 環境
       - name: 設定 Python 3.9 環境
         uses: actions/setup-python@v4
         with:
           python-version: 3.9
 
-      # 步驟 3: 安裝相依套件
-      # 這會執行 "pip install -r requirements.txt"
-      # 小助理會讀取你的 requirements.txt 檔案，把所有需要的函式庫都裝好
-      - name: 安裝相依套件
+      # 步驟 3: 安裝相依套件與 Jules
+      - name: 安裝相依套件與 Jules
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install jules-app # 修正：Jules 的套件名稱是 jules-app
 
-      # 步驟 4: 執行你的 Python 程式 (這就是最簡單的測試)
-      # 小助理會試著跑一次你的主程式，如果程式碼有語法錯誤或執行到一半崩潰，這一步就會失敗
-      - name: 執行主程式
+      # 步驟 4: 使用 Jules 進行 AI 程式碼審查
+      - name: Jules AI 程式碼審查
+        run: jules review
+        env:
+          JULES_API_KEY: ${{ secrets.JULES_API_KEY }} # 雖然 CD 不用，但 CI 還是需要這個 Secret
+
+      # 步驟 5: 執行 Pytest 測試
+      - name: 執行 Pytest 測試
         run: pytest
 
-      # 步驟 5: 部署 (目前只是一個成功的訊息)
-      # 如果前面的步驟都成功了，就會執行這一步
-      - name: 部署成功訊息
-        run: echo "程式碼檢查完畢，可以成功執行！"
+# --- 第二個工作：CD (自動部署) - 已暫時禁用 ---
+#  deploy:
+#    # 這行是關鍵：表示 deploy 工作必須在 build-and-test 成功後才開始
+#    needs: build-and-test
+#    runs-on: ubuntu-latest
+#    steps:
+#      # 步驟 1: 透過 SSH 部署到你的伺服器
+#      - name: 部署到伺服器
+#        uses: appleboy/ssh-action@master
+#        with:
+#          host: ${{ secrets.SSH_HOST }}             # 你的伺服器 IP 位址或網域名稱
+#          username: ${{ secrets.SSH_USER }}         # 你用來登入伺服器的使用者名稱
+#          key: ${{ secrets.SSH_PRIVATE_KEY }}     # 你用來登入伺服器的 SSH 私鑰
+#          script: |
+#            # 以下是在你伺服器上執行的指令
+#            # 請根據你的實際路徑和設定修改
+#            echo "登入伺服器成功，開始部署..."
+#            cd /path/to/your/project # 1. 進入你專案在伺服器上的資料夾
+#            git pull origin main       # 2. 拉取最新的程式碼
+#            echo "安裝相依套件..."
+#            pip install -r requirements.txt # 3. 重新安裝可能新增的套件
+#            echo "重啟應用程式..."
+#            # 4. 重啟你的網站服務，你需要根據你的設定修改這行
+#            sudo systemctl restart your-app-name.service 
+#            echo "部署完成！"
