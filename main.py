@@ -12,7 +12,6 @@ from dotenv import load_dotenv
 import google.generativeai as genai
 from pypdf import PdfReader
 import io
-from packaging.version import parse as parse_version
 
 # --- 環境設定 ---
 load_dotenv()
