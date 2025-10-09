@@ -1,43 +1,38 @@
-# 流程名稱更新，以反映包含 CI 和 CD
-name: Python CI/CD 測試與部署流程
+# 流程名稱更新，以反映 CI 流程的工具
+name: Python CI with Ruff and Pytest
 
-# 觸發條件不變：當推送到 main 分支時執行
+# 觸發條件不變
 on:
   push:
     branches:
       - main
-
-# 工作流程包含兩個主要工作：build-and-test (CI) 和 deploy (CD)
 jobs:
-  # --- 第一個工作：CI (建置與測試) ---
+  # CI 工作
   build-and-test:
     runs-on: ubuntu-latest
     steps:
-      # 步驟 1: 取得你的程式碼
-      - name: 取得程式碼
+      # 步驟 1: 取得程式碼
+      - name: Get code
         uses: actions/checkout@v3
 
-      # 步驟 2: 設定 Python 環境
-      - name: 設定 Python 3.11 環境
+      # 步驟 2: 設定 Python 3.13 環境
+      - name: Set up Python 3.13
         uses: actions/setup-python@v4
         with:
-          python-version: 3.11 # 【修正】降版以確保相容性
+          python-version: 3.13
 
-      # 步驟 3: 安裝相依套件與 Jules
-      - name: 安裝相依套件與 Jules
-        run: |
+      # 步驟 3: 安裝相依套件 (現在包含 Ruff)
+      - name: Install dependencies
+        run: 
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install jules
 
-      # 步驟 4: 使用 Jules 進行 AI 程式碼審查
-      - name: Jules AI 程式碼審查
-        run: jules
-        env:
-          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+      # 【已替換】步驟 4: 使用 Ruff 進行程式碼檢查
+      - name: Run Linter (Ruff)
+        run: ruff check .
 
       # 步驟 5: 執行 Pytest 測試
-      - name: 執行 Pytest 測試
+      - name: Run Pytest
         run: pytest
 
 # --- 第二個工作：CD (自動部署) - 已暫時禁用 ---

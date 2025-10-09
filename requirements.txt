@@ -6,3 +6,4 @@ pypdf
 python-multipart
 packaging
 pytest
+ruff
