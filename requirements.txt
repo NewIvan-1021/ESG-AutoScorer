@@ -4,3 +4,4 @@ python-dotenv
 google-generativeai
 pypdf
 python-multipart
+packaging
