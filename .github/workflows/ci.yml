@@ -1,0 +1,47 @@
+# 給這個工作流程取個名字，會顯示在 GitHub 的 Actions 頁面
+name: Python App CI
+
+# 觸發條件：當推送到 main 分支時執行
+on:
+  push:
+    branches:
+      - main
+
+# 要執行的工作
+jobs:
+  # 第一個工作的 ID，可以自己取名，例如 build-and-test
+  build-and-test:
+    # 指定工作要在哪種作業系統的電腦上執行 (這裡用最新的 Ubuntu)
+    runs-on: ubuntu-latest
+
+    # 這個工作的詳細步驟
+    steps:
+      # 步驟 1: 取得你的程式碼
+      # 小助理會把你的專案檔案下載到它用的那台電腦上
+      - name: 取得程式碼
+        uses: actions/checkout@v3
+
+      # 步驟 2: 設定 Python 環境
+      # 告訴小助理要安裝 Python，這裡指定 3.9 版本，你可以改成你需要的版本
+      - name: 設定 Python 3.9 環境
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.9
+
+      # 步驟 3: 安裝相依套件
+      # 這會執行 "pip install -r requirements.txt"
+      # 小助理會讀取你的 requirements.txt 檔案，把所有需要的函式庫都裝好
+      - name: 安裝相依套件
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # 步驟 4: 執行你的 Python 程式 (這就是最簡單的測試)
+      # 小助理會試著跑一次你的主程式，如果程式碼有語法錯誤或執行到一半崩潰，這一步就會失敗
+      - name: 執行主程式
+        run: python main.py
+
+      # 步驟 5: 部署 (目前只是一個成功的訊息)
+      # 如果前面的步驟都成功了，就會執行這一步
+      - name: 部署成功訊息
+        run: echo "程式碼檢查完畢，可以成功執行！"
