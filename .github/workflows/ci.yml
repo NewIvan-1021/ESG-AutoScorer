@@ -1,5 +1,5 @@
 # 給這個工作流程取個名字，會顯示在 GitHub 的 Actions 頁面
-name: Python App CI
+name: Python CI 程式碼自動測試
 
 # 觸發條件：當推送到 main 分支時執行
 on:
@@ -39,7 +39,7 @@ jobs:
       # 步驟 4: 執行你的 Python 程式 (這就是最簡單的測試)
       # 小助理會試著跑一次你的主程式，如果程式碼有語法錯誤或執行到一半崩潰，這一步就會失敗
       - name: 執行主程式
-        run: python main.py
+        run: pytest
 
       # 步驟 5: 部署 (目前只是一個成功的訊息)
       # 如果前面的步驟都成功了，就會執行這一步
