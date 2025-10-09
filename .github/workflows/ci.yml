@@ -32,7 +32,7 @@ jobs:
 
       # 步驟 4: 使用 Jules 進行 AI 程式碼審查
       - name: Jules AI 程式碼審查
-        run: jules review
+        run: jules
         env:
           JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
 
