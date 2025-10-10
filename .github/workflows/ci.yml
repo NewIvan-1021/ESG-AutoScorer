@@ -5,6 +5,8 @@ name: Python CI with Ruff and Pytest
 on:
   push:
     branches: main
+  pull_request:
+    branches: main
 jobs:
   # CI 工作
   build-and-test:
