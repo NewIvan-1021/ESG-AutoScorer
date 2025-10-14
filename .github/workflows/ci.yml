@@ -1,40 +1,37 @@
-# 流程名稱更新，以反映 CI 流程的工具
 name: Python CI with Ruff and Pytest
 
-# 觸發條件不變
 on:
   push:
-    branches: main
+    branches: [ main ]
   pull_request:
-    branches: main
+    branches: [ main ]
+
 jobs:
-  # CI 工作
   build-and-test:
     runs-on: ubuntu-latest
     steps:
-      # 步驟 1: 取得程式碼
-      - name: Get code
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      # 步驟 2: 設定 Python 3.13 環境
       - name: Set up Python 3.13
         uses: actions/setup-python@v5
         with:
           python-version: 3.13
 
-      # 步驟 3: 安裝相依套件 (現在包含 Ruff)
       - name: Install dependencies
-        run: | # 【已修正】加上管道符號 | 來支援多行指令
+        run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install ruff pytest pytest-mock httpx
 
-      # 【已替換】步驟 4: 使用 Ruff 進行程式碼檢查
-      - name: Run Linter (Ruff)
-        run: ruff check .
+      - name: Run Ruff Linter (auto fix + format)
+        run: |
+          echo "🚀 Running Ruff auto-fix & format..."
+          ruff check . --fix
+          ruff format .
 
-      # 步驟 5: 執行 Pytest 測試
       - name: Run Pytest
-        run: pytest
+        run: pytest -v
 
 # --- 第二個工作：CD (自動部署) - 已暫時禁用 ---
 #  deploy:
