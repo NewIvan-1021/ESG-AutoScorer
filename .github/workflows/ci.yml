@@ -30,8 +30,9 @@ jobs:
           ruff check . --fix
           ruff format .
 
-      - name: Run Pytest
-        run: pytest -v
+      - name: Run Pytest with coverage
+        run: pytest --cov=app --cov-report=term-missing
+
 
 # --- 第二個工作：CD (自動部署) - 已暫時禁用 ---
 #  deploy:
