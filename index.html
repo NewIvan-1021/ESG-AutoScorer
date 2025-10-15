@@ -24,23 +24,47 @@
             <p class="text-lg text-text-secondary max-w-2xl mx-auto">基於 TCSA 台灣企業永續獎評選準則，提供專業、客觀的 AI 評分與洞察</p>
         </header>
 
+        <!-- === 修改後的進度條結構 === -->
         <div id="steps-container" class="max-w-4xl mx-auto mb-16">
-             <div class="flex items-center">
-                <div id="step-wrapper-1" class="step-indicator-wrapper flex-shrink-0"><div id="step1" class="step-indicator flex items-center justify-center w-full h-full rounded-full font-bold text-lg">1</div></div>
+             <div class="flex items-start justify-between">
+                <!-- 步驟 1 -->
+                <div class="step-item-container">
+                    <div id="step-wrapper-1" class="step-indicator-wrapper mx-auto">
+                        <div id="step1" class="step-indicator flex items-center justify-center w-full h-full rounded-full font-bold text-lg">1</div>
+                    </div>
+                    <p class="mt-2 text-sm text-center text-text-secondary">評分架構</p>
+                </div>
+                <!-- 連接線 1 -->
                 <div id="step-line-1" class="step-line flex-grow"></div>
-                <div id="step-wrapper-2" class="step-indicator-wrapper flex-shrink-0"><div id="step2" class="step-indicator flex items-center justify-center w-full h-full rounded-full font-bold text-lg">2</div></div>
+                <!-- 步驟 2 -->
+                <div class="step-item-container">
+                    <div id="step-wrapper-2" class="step-indicator-wrapper mx-auto">
+                        <div id="step2" class="step-indicator flex items-center justify-center w-full h-full rounded-full font-bold text-lg">2</div>
+                    </div>
+                    <p class="mt-2 text-sm text-center text-text-secondary">上傳與配置</p>
+                </div>
+                <!-- 連接線 2 -->
                 <div id="step-line-2" class="step-line flex-grow"></div>
-                <div id="step-wrapper-3" class="step-indicator-wrapper flex-shrink-0"><div id="step3" class="step-indicator flex items-center justify-center w-full h-full rounded-full font-bold text-lg">3</div></div>
+                <!-- 步驟 3 -->
+                <div class="step-item-container">
+                    <div id="step-wrapper-3" class="step-indicator-wrapper mx-auto">
+                        <div id="step3" class="step-indicator flex items-center justify-center w-full h-full rounded-full font-bold text-lg">3</div>
+                    </div>
+                    <p class="mt-2 text-sm text-center text-text-secondary">AI 分析評分</p>
+                </div>
+                <!-- 連接線 3 -->
                 <div id="step-line-3" class="step-line flex-grow"></div>
-                <div id="step-wrapper-4" class="step-indicator-wrapper flex-shrink-0"><div id="step4" class="step-indicator flex items-center justify-center w-full h-full rounded-full font-bold text-lg">4</div></div>
-            </div>
-            <div class="flex justify-between mt-2 text-sm text-text-secondary">
-                <span class="text-center w-1/4">評分架構</span>
-                <span class="text-center w-1/4">上傳與配置</span>
-                <span class="text-center w-1/4">AI 分析評分</span>
-                <span class="text-center w-1/4">查看分析結果</span>
+                <!-- 步驟 4 -->
+                <div class="step-item-container">
+                    <div id="step-wrapper-4" class="step-indicator-wrapper mx-auto">
+                        <div id="step4" class="step-indicator flex items-center justify-center w-full h-full rounded-full font-bold text-lg">4</div>
+                    </div>
+                    <p class="mt-2 text-sm text-center text-text-secondary">查看分析結果</p>
+                </div>
             </div>
         </div>
+        <!-- === 結構修改結束 === -->
+
 
         <div id="step1-content" class="card p-8">
             <h2 class="text-2xl font-bold text-text-primary mb-6 flex items-center">

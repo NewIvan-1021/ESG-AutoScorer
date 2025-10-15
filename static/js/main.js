@@ -344,7 +344,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="flex flex-wrap justify-between items-start gap-4 mb-8">
                             <div class="flex items-center gap-3">
                                 <h3 class="text-2xl font-bold text-text-primary">${mainTitle}</h3>
-                                ${isPreview ? '<span class="text-xs font-semibold px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full">預覽</span>' : ''}
+                                ${isPreview ? '<span class="badge-preview">預覽</span>' : ''}
                             </div>
                             <button data-company-id="${companyId}" class="export-pdf-btn btn btn-primary">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
@@ -363,11 +363,11 @@ document.addEventListener('DOMContentLoaded', () => {
                                     </div>
                                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-6">
                                         <div class="card p-4 shadow-none border border-gray-200">
-                                            <h5 class="font-semibold text-green-700 mb-2">主要優勢</h5>
+                                            <h5 class="font-semibold text-strengths mb-2">主要優勢</h5>
                                             ${this.renderStrengthsImprovements(result.strengths)}
                                         </div>
                                         <div class="card p-4 shadow-none border border-gray-200">
-                                            <h5 class="font-semibold text-yellow-700 mb-2">改善建議</h5>
+                                            <h5 class="font-semibold text-improvements mb-2">改善建議</h5>
                                             ${this.renderStrengthsImprovements(result.improvements)}
                                         </div>
                                     </div>
@@ -437,7 +437,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const pct = section.max_score > 0 ? (section.score || 0) / section.max_score * 100 : 0;
                     return `<div id="section-${this.sanitizeId(section.title)}-${companyId}" class="detail-content-section card p-4 md:p-6 shadow-sm">
                         <div class="flex flex-wrap justify-between items-center gap-2 mb-4">
-                            <h6 class="text-base font-semibold text-text-primary">${section.title}</h6>
+                            <h6 class="text-base font-semibold detail-view-section-title">${section.title}</h6>
                             <span class="text-sm font-medium text-text-secondary">${(section.score||0).toFixed(1)} / ${section.max_score}</span>
                         </div>
                         <div class="w-full bg-gray-200 rounded-full h-1.5 mb-6"><div class="bg-primary-accent h-1.5 rounded-full" style="width: ${pct}%"></div></div>
@@ -458,7 +458,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     return `<div class="grid grid-cols-5 gap-4">
                         <div class="col-span-4">
                             <p class="text-sm text-text-primary leading-6 max-w-prose">- ${sub.title}</p>
-                            <p class="text-xs text-text-secondary pl-4 italic mt-1">“${sub.rationale || '無理由'}”</p>
+                            <p class="rationale-text">“${sub.rationale || '無理由'}”</p>
                         </div>
                         <span class="col-span-1 text-sm font-medium text-right text-text-primary whitespace-nowrap">${(sub.score||0).toFixed(1)} / ${sub.max_score}</span>
                     </div>`;
@@ -745,3 +745,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
     App.init();
 });
+
+
