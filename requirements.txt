@@ -5,6 +5,7 @@ google-generativeai
 pypdf
 python-multipart
 packaging
+pytest-cov
 pytest
 ruff
 httpx
