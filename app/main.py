@@ -1,8 +1,11 @@
 import sys
 import os
 import logging
-from fastapi import FastAPI
+from pathlib import Path
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse  # 1. 導入 FileResponse
 from dotenv import load_dotenv
 import google.generativeai as genai
 from app.routers import scoring
@@ -31,7 +34,7 @@ app = FastAPI(
     version="3.0.0",
 )
 
-# --- CORS Middleware ---
+# --- CORS Middleware (保留，良好的開發習慣) ---
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -40,11 +43,28 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# --- 掛載靜態檔案目錄 ---
+# 使用絕對路徑以避免執行位置造成的問題
+APP_DIR = Path(__file__).resolve().parent
+app.mount("/static", StaticFiles(directory=APP_DIR / "static"), name="static")
+
+
 # --- Routers ---
 app.include_router(scoring.router)
+
+# --- 2. 新增此區塊，用來提供前端主頁面 ---
+@app.get("/")
+async def read_index(request: Request):
+    # 假設您的 index.html 檔案位於專案根目錄 (與 'app' 資料夾同層)
+    # 如果路徑不同，請修改 '..' 的部分
+    index_path = APP_DIR / ".." / "index.html"
+    if index_path.is_file():
+        return FileResponse(index_path)
+    return {"error": "index.html not found"}
 
 # --- Main ---
 if __name__ == "__main__":
     import uvicorn
     logger.info("Starting ESG AutoScorer API...")
-    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run("main:app", host="12-7.0.0.1", port=8000, reload=True)
+

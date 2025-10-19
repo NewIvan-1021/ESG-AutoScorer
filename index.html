@@ -11,6 +11,15 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="static/css/style.css">
+    <link rel="icon" type="image/png" href="static/images/favicon.png">
+    <script>
+        // --- 字型嵌入 (最終解決方案) ---
+        // 為了讓前端預覽完全獨立，不再依賴後端伺服器，請執行以下一次性設定：
+        // 1. 將您的 NotoSansTC-Regular.ttf 字型檔案，透過線上工具 (如 base64-online.com) 轉換為 Base64 字串。
+        // 2. 將轉換後的「完整字串」貼在下方的引號之間。
+        // 3. 這樣設定後，無論後端是否開啟，PDF 預覽和匯出都能 100% 成功。
+        window.__FONT_BASE64__ = ""; // <--- 在此貼上您的 Base64 字串
+    </script>
 </head>
 <body class="bg-light-bg">
     <div id="preview-banner">
@@ -24,7 +33,7 @@
             <p class="text-lg text-text-secondary max-w-2xl mx-auto">基於 TCSA 台灣企業永續獎評選準則，提供專業、客觀的 AI 評分與洞察</p>
         </header>
 
-        <!-- === 修改後的進度條結構 === -->
+        <!-- === 進度條結構 === -->
         <div id="steps-container" class="max-w-4xl mx-auto mb-16">
              <div class="flex items-start justify-between">
                 <!-- 步驟 1 -->
@@ -63,7 +72,6 @@
                 </div>
             </div>
         </div>
-        <!-- === 結構修改結束 === -->
 
 
         <div id="step1-content" class="card p-8">
@@ -98,12 +106,8 @@
             </div>
             <div class="border-t mt-10 pt-8" style="border-color: var(--border-color);">
                 <h3 class="text-lg font-medium text-text-primary mb-3">系統設定</h3>
-                <div class="flex items-center gap-4">
-                    <input type="file" id="font-input" class="hidden" accept=".ttf">
-                    <button type="button" id="font-upload-btn" class="btn btn-secondary focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--primary-accent)]">
-                        設定 PDF 中文字型
-                    </button>
-                    <span id="font-status" class="text-sm text-text-secondary">⚠️ PDF 中文字型尚未設定</span>
+                <div id="font-status-container" class="flex items-center gap-4">
+                    <!-- JavaScript 會根據字型設定狀態更新這裡的內容 -->
                 </div>
             </div>
             <div class="mt-10 flex flex-wrap justify-between items-center gap-4 border-t pt-8" style="border-color: var(--border-color);">
