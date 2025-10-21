@@ -5,7 +5,7 @@ from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse  # 1. 導入 FileResponse
+from fastapi.responses import FileResponse
 from dotenv import load_dotenv
 import google.generativeai as genai
 from app.routers import scoring
@@ -46,13 +46,20 @@ app.add_middleware(
 # --- 掛載靜態檔案目錄 ---
 # 使用絕對路徑以避免執行位置造成的問題
 APP_DIR = Path(__file__).resolve().parent
-app.mount("/static", StaticFiles(directory=APP_DIR / "static"), name="static")
+STATIC_DIR = APP_DIR / "static"
+
+# --- CI/CD 修復 ---
+# 在掛載前，確保 static 目錄存在，以解決 CI 環境中找不到目錄的問題
+STATIC_DIR.mkdir(parents=True, exist_ok=True)
+# --- 修復結束 ---
+
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
 # --- Routers ---
 app.include_router(scoring.router)
 
-# --- 2. 新增此區塊，用來提供前端主頁面 ---
+# --- 提供前端主頁面 ---
 @app.get("/")
 async def read_index(request: Request):
     # 假設您的 index.html 檔案位於專案根目錄 (與 'app' 資料夾同層)
